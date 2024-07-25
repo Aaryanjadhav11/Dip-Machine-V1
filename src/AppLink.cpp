@@ -12,8 +12,8 @@ Bidirectional communication status codes:
 */
 
 Preferences preferences;
-AsyncWebServer server(443);
-AsyncWebSocket ws("/wss");
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 // Variales only for internal
 struct Network {
@@ -22,39 +22,32 @@ struct Network {
     bool isOpen;
 };
 
-
 // ************** Function Declaration **************
 void HandleWiFi();
-void WiFiEvent(WiFiEvent_t event);
 Network* scanNetworks(int& networkCount);
 void updateWiFi(const char* ssid, const char* pass);
+void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
 // ========================== Main: appLinkInit =========================
 void appLinkInit(void * parameters) {
+    // Connect to wifi
     HandleWiFi();
+
+    // Start Websocket Server
+    ws.onEvent(onWsEvent);
+    server.addHandler(&ws);
+    server.begin();
+
+    // Start OTA
     ArduinoOTA.begin();
     MDNS.begin("DipMachine");
-
+    
     while (true) {
         vTaskDelay(10);
-        ArduinoOTA.handle();
     }
 } // appLinkInit
 
 // =======================================| WiFi functions |================================================
-void WiFiEvent(WiFiEvent_t event) {
-    switch (event) {
-        case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
-            Serial.println("[WiFiEvent] Client Connected");
-            break;
-        case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
-            Serial.println("[WiFiEvent] Client Disconnected");
-            break;
-        default:
-            break;
-    }
-} // WiFiEvent
-
 Network* scanNetworks(int& networkCount) {
     Serial.println("[scanNetworks] Searching for avaliable networks...");
     int n = WiFi.scanNetworks();
@@ -127,7 +120,6 @@ void HandleWiFi() {
         WiFi.mode(WIFI_AP);
         WiFi.softAPConfig(local_ip, gateway, subnet);
         WiFi.softAP("DipMachine");
-        WiFi.onEvent(WiFiEvent);
         Serial.print("[HandleWiFi] Starting Access Point (AP) with IP: ");
         Serial.println(WiFi.softAPIP());
     }
@@ -161,3 +153,18 @@ void initOTA(){
     });
 } // initOTA
 
+// =========================| Websocket Event handling |==============================
+void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  if (type == WS_EVT_CONNECT) {
+    Serial.printf("[onWsEvent] WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    client->text("OK: 200");
+  } else if (type == WS_EVT_DISCONNECT) {
+    Serial.printf("[onWsEvent] WebSocket client #%u disconnected\n", client->id());
+  } else if (type == WS_EVT_DATA) {
+    AwsFrameInfo *info = (AwsFrameInfo*)arg;
+    if (info->final && info->index == 0 && info->len == len) {
+      data[len] = '\0';  // Null-terminate the data
+      Serial.printf("[onWsEvent][%s] %s\n", client->remoteIP().toString().c_str(), (char*)data);
+    }
+  }
+} // onWsEvent
