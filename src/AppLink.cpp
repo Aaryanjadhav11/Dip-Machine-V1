@@ -51,6 +51,7 @@ void appLinkInit(void * parameters) {
             ws.textAll("NICE");
             counter = millis();
         }
+
         vTaskDelay(10);
     }
 } // appLinkInit
@@ -162,19 +163,26 @@ void initOTA(){
 } // initOTA
 
 // =========================| Websocket Event handling |==============================
-void processClientMessage(){
-
+void processClientMessage(char* message){
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, message);
+    if (error) {
+        Serial.print("[processClientMessage] deserializeJson() failed: ");
+        Serial.println(error.c_str());
+        return;
+    }
 }
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
     Serial.printf("[onWsEvent][%s] Client connected\n", client->remoteIP().toString().c_str());
   } else if (type == WS_EVT_DISCONNECT) {
-    Serial.printf("[onWsEvent][%s] Client disconnected\n", client->remoteIP().toString().c_str());
+    Serial.println("[onWsEvent] Client disconnected");
   } else if (type == WS_EVT_DATA) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len) {
       data[len] = '\0';  // Null-terminate the data
       Serial.printf("[onWsEvent][%s] %s\n", client->remoteIP().toString().c_str(), (char*)data);
+      processClientMessage((char*)data);
     }
   }
 } // onWsEvent
