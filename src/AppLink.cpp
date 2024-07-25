@@ -21,6 +21,10 @@ struct Network {
     int rssi;
     bool isOpen;
 };
+AsyncWebSocketClient* client = nullptr;
+MachineState currentState = MachineState::IDLE;
+
+#define BROADCAST ws.count() > 0 && currentState == MachineState::WORKING && millis() - counter > 2000
 
 // ************** Function Declaration **************
 void HandleWiFi();
@@ -41,8 +45,14 @@ void appLinkInit(void * parameters) {
     // Start OTA
     ArduinoOTA.begin();
     MDNS.begin("DipMachine");
-    
+
+    currentState = MachineState::WORKING;
+    unsigned long counter = millis();
     while (true) {
+        if (BROADCAST){
+            ws.textAll("NICE");
+            counter = millis();
+        }
         vTaskDelay(10);
     }
 } // appLinkInit
@@ -157,7 +167,7 @@ void initOTA(){
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
     Serial.printf("[onWsEvent] WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-    client->text("OK: 200");
+    client = client;
   } else if (type == WS_EVT_DISCONNECT) {
     Serial.printf("[onWsEvent] WebSocket client #%u disconnected\n", client->id());
   } else if (type == WS_EVT_DATA) {
