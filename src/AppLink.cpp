@@ -21,10 +21,8 @@ struct Network {
     int rssi;
     bool isOpen;
 };
-AsyncWebSocketClient* client = nullptr;
 MachineState currentState = MachineState::IDLE;
-
-#define BROADCAST ws.count() > 0 && currentState == MachineState::WORKING && millis() - counter > 2000
+#define BROADCAST (ws.count() > 0 && currentState == MachineState::WORKING && millis() - counter > 2000)
 
 // ************** Function Declaration **************
 void HandleWiFi();
@@ -105,14 +103,14 @@ void HandleWiFi() {
     WiFi.setHostname("DipMachine");
     WiFi.begin(ssid.c_str(), password.c_str());
 
-    unsigned long start = millis();
+    unsigned long counter = millis();
     // Attempt to connect to WiFi
-    while (WiFi.status() != WL_CONNECTED && millis() - start < 5000) {
+    while (WiFi.status() != WL_CONNECTED && millis() - counter < 5000) {
         Serial.print(".");
         digitalWrite(BUILTIN_LED, HIGH);
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(100));
         digitalWrite(BUILTIN_LED, LOW);
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 
     if (WiFi.status() == WL_CONNECTED) {
@@ -164,12 +162,14 @@ void initOTA(){
 } // initOTA
 
 // =========================| Websocket Event handling |==============================
+void processClientMessage(){
+
+}
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
-    Serial.printf("[onWsEvent] WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-    client = client;
+    Serial.printf("[onWsEvent][%s] Client connected\n", client->remoteIP().toString().c_str());
   } else if (type == WS_EVT_DISCONNECT) {
-    Serial.printf("[onWsEvent] WebSocket client #%u disconnected\n", client->id());
+    Serial.printf("[onWsEvent][%s] Client disconnected\n", client->remoteIP().toString().c_str());
   } else if (type == WS_EVT_DATA) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len) {
