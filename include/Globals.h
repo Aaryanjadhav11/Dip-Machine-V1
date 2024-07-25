@@ -43,20 +43,20 @@ constexpr int PWM_RESOLUTION = 8;
 
 // Struct to hold machine information
 struct MachineInfo {
-    bool powerLoss;
-    uint8_t onBeaker;
-    int onCycle;
+    volatile bool powerLoss;
     int timeLeft;
     uint8_t activeBeakers;
+    uint8_t onBeaker;
+    int onCycle;
     int setCycles;
+    float currentTemps[MAX_BEAKERS];
+    float setDipTemperature[MAX_BEAKERS];
+    int setDipDuration[MAX_BEAKERS];
+    int setDipRPM[MAX_BEAKERS];
 };
-
-// Extern declaration of global arrays for machine settings
-extern int setDipRPM[MAX_BEAKERS];
-extern float setBeakerTemps[MAX_BEAKERS];
-extern int setDipDuration[MAX_BEAKERS];
-extern float currentTemps[MAX_BEAKERS];
-
+extern MachineInfo machineInfo;
+#define HEATING_WORKING (currentState == MachineState::HEATING || currentState == MachineState::WORKING)
+#define machineInfoStore "mahcineInfo"
 // Mosfet pins array
 constexpr uint8_t MOSFET_PINS[MAX_BEAKERS] = {4, 5, 18, 22, 19, 21};
 

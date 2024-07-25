@@ -4,11 +4,6 @@ import socket
 import json
 
 # Message to initiate WiFi scanning
-msg = {
-    "status": "scanWiFi",
-    "ssid": "",
-    "password": ""
-}
 
 async def receive_data():
     try:
@@ -18,7 +13,7 @@ async def receive_data():
 
         async with websockets.connect(uri) as websocket:
             # Send the initial scanWiFi message
-            await websocket.send(json.dumps(msg))
+            await websocket.send(json.dumps(dict(status = "scanWiFi")))
 
             # Receive the list of available networks
             print("\nSearching for newtorks, Hang on...\n")
@@ -46,9 +41,8 @@ async def receive_data():
 
             # Update the message to set WiFi
             selected_ssid = ssids[tag]
-            msg["status"] = "setWiFi"
-            msg["ssid"] = selected_ssid
-            msg["password"] = "" if message[selected_ssid]["isOpen"] else input(f"Enter the password for [{selected_ssid}]: ")
+            passw = "" if message[selected_ssid]["isOpen"] else input(f"Enter the password for [{selected_ssid}]: ")
+            msg = dict(status = "setWiFi", ssid = selected_ssid, password = passw)
 
             # Send the updated message to set the WiFi
             await websocket.send(json.dumps(msg))
@@ -56,7 +50,7 @@ async def receive_data():
 
     except socket.gaierror:
         print("Could not resolve the server address.")
-    except websockets.exceptions.ConnectionError:
+    except websockets.ConnectionClosedError:
         print("Failed to connect to the server.")
     except json.JSONDecodeError:
         print("Failed to decode the JSON response.")
