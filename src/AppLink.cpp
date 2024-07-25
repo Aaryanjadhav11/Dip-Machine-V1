@@ -1,16 +1,5 @@
 #include "Globals.h"
 
-/*
-Bidirectional communication status codes:
-0 : Start new - User
-1 : Abort. If new machine - User
-2 : Set new WiFi - User
-3 : Power loss occurred - Machine
-4 : Recover from power loss - User
-5 : Error - Machine
-6 : General broadcast - Machine
-*/
-
 Preferences preferences;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
@@ -26,7 +15,7 @@ MachineState currentState = MachineState::IDLE;
 
 // ************** Function Declaration **************
 void HandleWiFi();
-Network* scanNetworks(int& networkCount);
+void scanNetworks();
 void updateWiFi(const char* ssid, const char* pass);
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 
@@ -44,39 +33,43 @@ void appLinkInit(void * parameters) {
     ArduinoOTA.begin();
     MDNS.begin("DipMachine");
 
+    esp_task_wdt_init(10, true); // true = panic on timeout
+    esp_task_wdt_add(NULL); // Add current task to the watchdog
+
     currentState = MachineState::WORKING;
     unsigned long counter = millis();
     while (true) {
-        if (BROADCAST){
-            ws.textAll("NICE");
+        if (millis() - counter > 2000){
+            esp_task_wdt_reset();
             counter = millis();
         }
-
-        vTaskDelay(10);
     }
 } // appLinkInit
 
 // =======================================| WiFi functions |================================================
-Network* scanNetworks(int& networkCount) {
+void scanNetworks() {
     Serial.println("[scanNetworks] Searching for avaliable networks...");
     int n = WiFi.scanNetworks();
     Network* networks = new Network[n];
-    networkCount = n;
+    JsonDocument doc;
 
     for (int i = 0; i < n; i++) {
         networks[i].ssid = WiFi.SSID(i);
         networks[i].rssi = WiFi.RSSI(i);
         networks[i].isOpen = (WiFi.encryptionType(i) == WIFI_AUTH_OPEN);
 
-        Serial.printf("%d: %s (%d)%s\n",
-            i + 1,
-            networks[i].ssid.c_str(),
-            networks[i].rssi,
-            networks[i].isOpen ? " " : "*");
+        // Create a JSON object for each network
+        JsonObject network = doc[networks[i].ssid].to<JsonObject>();
+        network["rssi"] = networks[i].rssi;
+        network["isOpen"] = networks[i].isOpen;
     }
-
+    // Serialize the JSON document to a string
+    String jsonString;
+    serializeJson(doc, jsonString);
+    // Send the JSON string to all WebSocket clients
+    ws.textAll(jsonString);
+    delete[] networks;
     Serial.println("[scanNetworks] Done");
-    return networks;
 } // scanNetworks
 
 void updateWiFi(const char* ssid, const char* pass){
@@ -87,7 +80,7 @@ void updateWiFi(const char* ssid, const char* pass){
     Serial.printf("[updateWiFi] Stored SSID: %s, Password: %s\n", ssid, pass);
     preferences.end();
 
-    if (setSSID && setPass) {
+    if (setSSID) {
         WiFi.disconnect();
         HandleWiFi();
     }
@@ -171,7 +164,17 @@ void processClientMessage(char* message){
         Serial.println(error.c_str());
         return;
     }
+
+    String status = doc["status"];
+    if (status == "scanWiFi") {
+        scanNetworks();
+    } else if (status == "setWiFi") {
+        String ssid = doc["ssid"];
+        String password = doc["password"];
+        updateWiFi(ssid.c_str(), password.c_str());
+    }
 }
+
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
     Serial.printf("[onWsEvent][%s] Client connected\n", client->remoteIP().toString().c_str());
