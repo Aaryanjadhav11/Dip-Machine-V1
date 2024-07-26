@@ -1,31 +1,31 @@
 #include "Globals.h"
-
+#include "MachineLink/MachineLink.h"
 // Function prototypes
 void IRAM_ATTR onPowerLoss();
 void printMachineInfo(const MachineInfo& info);
 
-// Global variables
 volatile unsigned long lastInterruptTime = 0;
 Preferences pref;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(BUILTIN_LED, OUTPUT);
-  digitalWrite(BUILTIN_LED, LOW);
+  
+  pinMode(POWER_LOSS_PIN, INPUT_PULLUP);
 
   xTaskCreate(appLinkInit, "appLink", 4096, NULL, 0, NULL);
+  xTaskCreate(heatingInit, "machineLink", 4096, NULL, 1, NULL);
 
-  pinMode(POWER_LOSS_PIN, INPUT_PULLUP);
   attachInterrupt(POWER_LOSS_PIN, onPowerLoss, FALLING);
+  Move::home();
 }
 
 void loop() {
-  if (currentState == MachineState::HEATING){
-    Serial.println("Shit is heating UP!");
-    delay(5000);
+  if (currentState == MachineState::WORKING){
+    
   }
 }
 
+// =====================| Power loss interrupt | ===========================
 void IRAM_ATTR onPowerLoss() {
   unsigned long interruptTime = millis();
   // If interrupts come faster than debounceDelay, assume it's a false trigger

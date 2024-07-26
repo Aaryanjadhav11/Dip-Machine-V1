@@ -21,7 +21,6 @@ void updateWiFi(const char* ssid, const char* pass);
 void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 void checkPowerLoss();
 void printMachineInfo(const MachineInfo& info);
-void clearAll();
 void startMachine(const JsonDocument& doc, MachineInfo& info);
 void broadcast();
 
@@ -45,7 +44,7 @@ void appLinkInit(void * parameters) {
     unsigned long wdt_counter = millis();
     unsigned long broadcast_counter = millis();
     while (true) {
-      if (millis() - wdt_counter > 2000){
+      if (WDT_TRIGGER){
         esp_task_wdt_reset();
         wdt_counter = millis();
       }

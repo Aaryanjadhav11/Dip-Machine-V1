@@ -1,13 +1,10 @@
 #pragma once
 
-#include "AccelStepper.h"
 #include "Arduino.h"
 #include "ArduinoJson.h"
 #include "ArduinoOTA.h"
-#include "DallasTemperature.h"
 #include "ESPAsyncWebServer.h"
 #include "ESPmDNS.h"
-#include "OneWire.h"
 #include "Preferences.h"
 #include "WiFi.h"
 #include "esp_task_wdt.h"
@@ -29,15 +26,14 @@ extern MachineState currentState;
 // Constants
 constexpr int MAX_BEAKERS = 6;
 constexpr int POWER_LOSS_PIN = 34;
-constexpr int TEMP_SENSOR_PIN = 15;
 constexpr int RED_PIN = 2;
 constexpr int GREEN_PIN = 14;
 constexpr int BLUE_PIN = 27;
 
+// TODO: Shitft this values in indicator file
 constexpr int RED_CHANNEL = 0;
 constexpr int GREEN_CHANNEL = 1;
 constexpr int BLUE_CHANNEL = 2;
-
 constexpr int PWM_FREQ = 5000;
 constexpr int PWM_RESOLUTION = 8;
 
@@ -57,7 +53,9 @@ struct MachineInfo {
 extern MachineInfo machineInfo;
 #define HEATING_WORKING (currentState == MachineState::HEATING || currentState == MachineState::WORKING)
 #define machineInfoStore "mahcineInfo"
+#define WDT_TRIGGER (millis() - wdt_counter > 2000)
 // Mosfet pins array
 constexpr uint8_t MOSFET_PINS[MAX_BEAKERS] = {4, 5, 18, 22, 19, 21};
 
 void appLinkInit(void * parameters);
+void clearAll();
