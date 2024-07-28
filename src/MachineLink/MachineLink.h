@@ -24,7 +24,7 @@ constexpr int TEMP_SENSOR_PIN = 15;
 
 // Functions
 void heatingInit(void * params);
-void checkSensors(uint8_t sensorNumber);
+bool checkSensors(uint8_t sensorNumber);
 
 namespace Move{
     void dip(int duration, int rpm);

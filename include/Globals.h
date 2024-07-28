@@ -39,6 +39,7 @@ constexpr int PWM_RESOLUTION = 8;
 
 // Struct to hold machine information
 struct MachineInfo {
+    volatile bool sensorError;
     volatile bool powerLoss;
     int timeLeft;
     uint8_t activeBeakers;

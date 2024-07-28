@@ -9,20 +9,18 @@ Preferences pref;
 
 void setup() {
   Serial.begin(115200);
-  
   pinMode(POWER_LOSS_PIN, INPUT_PULLUP);
 
-  xTaskCreate(appLinkInit, "appLink", 4096, NULL, 0, NULL);
-  xTaskCreate(heatingInit, "machineLink", 4096, NULL, 1, NULL);
+  xTaskCreate(appLinkInit, "appLink", 4096, NULL, 1, NULL);
+  xTaskCreate(heatingInit, "machineLink", 4096, NULL, 0, NULL);
 
   attachInterrupt(POWER_LOSS_PIN, onPowerLoss, FALLING);
-  Move::home();
+  // Move::home();
+  unsigned long wdt_counter = millis();
 }
 
 void loop() {
-  if (currentState == MachineState::WORKING){
-    
-  }
+
 }
 
 // =====================| Power loss interrupt | ===========================

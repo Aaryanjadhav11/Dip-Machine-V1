@@ -45,6 +45,7 @@ void appLinkInit(void * parameters) {
     unsigned long broadcast_counter = millis();
     while (true) {
       if (WDT_TRIGGER){
+        Serial.println("[appLinkInit] Watchdog triggered");
         esp_task_wdt_reset();
         wdt_counter = millis();
       }

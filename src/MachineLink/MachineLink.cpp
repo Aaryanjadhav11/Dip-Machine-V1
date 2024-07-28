@@ -18,35 +18,52 @@ void PID();
 
 // =======================| Heating Handling Code |===========================
 void heatingInit(void * params){
-    ledcSetup(STEERING_CHANNEL, 5000, 10);
-    ledcAttachPin(STEERING_MOTOR_PIN, STEERING_CHANNEL);
-    ledcWrite(STEERING_CHANNEL, 0);
+  ledcSetup(STEERING_CHANNEL, 5000, 10);
+  ledcAttachPin(STEERING_MOTOR_PIN, STEERING_CHANNEL);
+  ledcWrite(STEERING_CHANNEL, 0);
 
   pinMode(Z_AXIS_LIMIT_PIN, INPUT_PULLDOWN);
   pinMode(ROTARY_AXIS_LIMIT_PIN, INPUT_PULLDOWN);
 
     // Basic wdt setup
-    esp_task_wdt_init(50, true);
-    esp_task_wdt_add(NULL);
-    unsigned long wdt_counter = millis();
-    while (true){
-        if (WDT_TRIGGER){
-            esp_task_wdt_reset();
-            wdt_counter = millis();
-        }
-        
-        if (currentState == MachineState::HEATING){
-            currentState == MachineState::WORKING;
-        }
-        
+  esp_task_wdt_init(50, true);
+  esp_task_wdt_add(NULL);
+  unsigned long wdt_counter = millis();
+  while (true){
+    if (WDT_TRIGGER){
+      Serial.println("[heatingInit] Watchdog triggered");
+      esp_task_wdt_reset();
+      wdt_counter = millis();
     }
+  }
 } // heatingInit
 
 void PID(){
 
 }
-void checkSensors(uint8_t sensorNumber){
 
+void displaySensorAddresses() {
+  int deviceCount = sensors.getDeviceCount();
+  
+  Serial.printf("Found %d devices.\n", deviceCount);
+
+  for (int i = 0; i < deviceCount && i < 6; i++) {
+    DeviceAddress address;
+    if (sensors.getAddress(address, i)) {
+      Serial.printf("Sensor %d address: ", i + 1);
+      printAddress(address);
+    } else {
+      Serial.printf("Error: Could not find address for sensor %d!\n", i + 1);
+    }
+  }
+}
+
+void printAddress(DeviceAddress deviceAddress) {
+  for (uint8_t i = 0; i < 8; i++) {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
+  Serial.println();
 }
 // =======================| Motion Handling Code |===========================
 namespace Move{
