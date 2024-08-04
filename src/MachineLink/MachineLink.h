@@ -26,6 +26,8 @@ constexpr int TEMP_SENSOR_PIN = 15;
 void heatingInit(void * params);
 bool checkSensors(uint8_t sensorNumber);
 
+#define RUN (currentState != MachineState::WORKING)
+
 namespace Move{
     void dip(int duration, int rpm);
     void moveToBeaker(uint8_t beakerNum);

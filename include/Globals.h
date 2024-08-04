@@ -19,7 +19,6 @@ enum class MachineState : uint8_t {
     HEATING,
     ABORT
 };
-
 // Extern declaration of the current machine state
 extern MachineState currentState;
 

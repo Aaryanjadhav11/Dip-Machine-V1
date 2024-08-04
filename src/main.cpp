@@ -15,12 +15,26 @@ void setup() {
   xTaskCreate(heatingInit, "machineLink", 4096, NULL, 0, NULL);
 
   attachInterrupt(POWER_LOSS_PIN, onPowerLoss, FALLING);
-  // Move::home();
-  unsigned long wdt_counter = millis();
 }
 
 void loop() {
-
+  if (currentState == MachineState::WORKING) {
+    for (size_t i = machineInfo.onCycle; i < machineInfo.setCycles; i++) {
+      if (RUN) break;
+      for (size_t j = machineInfo.onBeaker; j < machineInfo.activeBeakers; j++) {
+        if (RUN) break;
+        Move::moveToBeaker(j);
+        Move::dip(machineInfo.setDipDuration[j], machineInfo.setDipRPM[j]);
+        machineInfo.onBeaker++;
+      }
+      machineInfo.onBeaker = 0;
+      machineInfo.onCycle++;
+      if (machineInfo.onCycle == machineInfo.setCycles) {
+        Move::present();
+        break;
+      }
+    }
+  }
 }
 
 // =====================| Power loss interrupt | ===========================

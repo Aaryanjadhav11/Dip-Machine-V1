@@ -8,10 +8,7 @@ AccelStepper stepper_R(1, ROTARY_AXIS_STEP_PIN, ROTARY_AXIS_DIR_PIN);
 AccelStepper stepper_Z(1, Z_AXIS_STEP_PIN, Z_AXIS_DIR_PIN);
 
 // Global variables
-const int beakerDistance[6] = {0, -345, -720, -1085, -1415, -1775};
-
-// If statement definition
-#define RUN (currentState != MachineState::WORKING)
+const int beakerDistance[6] = {0, -340, -680, -1055, -1390, -1755};
 
 // Function Prototype
 void PID();
@@ -29,17 +26,30 @@ void heatingInit(void * params){
   esp_task_wdt_init(50, true);
   esp_task_wdt_add(NULL);
   unsigned long wdt_counter = millis();
+  Move::home();
   while (true){
     if (WDT_TRIGGER){
       Serial.println("[heatingInit] Watchdog triggered");
       esp_task_wdt_reset();
       wdt_counter = millis();
     }
+    if (currentState == MachineState::HEATING){
+      currentState = MachineState::WORKING;
+    }
   }
 } // heatingInit
 
 void PID(){
 
+}
+
+
+void printAddress(DeviceAddress deviceAddress) {
+  for (uint8_t i = 0; i < 8; i++) {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
+  Serial.println();
 }
 
 void displaySensorAddresses() {
@@ -57,14 +67,6 @@ void displaySensorAddresses() {
     }
   }
 }
-
-void printAddress(DeviceAddress deviceAddress) {
-  for (uint8_t i = 0; i < 8; i++) {
-    if (deviceAddress[i] < 16) Serial.print("0");
-    Serial.print(deviceAddress[i], HEX);
-  }
-  Serial.println();
-}
 // =======================| Motion Handling Code |===========================
 namespace Move{
 
@@ -72,7 +74,7 @@ void dip(int duration, int rpm){
 // Dips the head in solution and starts sterring
   Serial.println("[dip] Putting in...");
 
-  const int dipDistance = -12000;
+  const int dipDistance = -14500;
   stepper_Z.moveTo(dipDistance);
   Serial.printf("[dip] Duration: %i   RPM: %i\n", duration, rpm);
   while (stepper_Z.currentPosition() != dipDistance) {
@@ -142,7 +144,7 @@ void home(){
 
   while (!digitalRead(ROTARY_AXIS_LIMIT_PIN)) stepper_R.runSpeed();
   stepper_R.setCurrentPosition(0);
-  stepper_R.runToNewPosition(-50);
+  stepper_R.runToNewPosition(-100);
   stepper_R.setCurrentPosition(0);
 
   stepper_R.setAcceleration(1000);
@@ -156,11 +158,11 @@ void moveToBeaker(uint8_t beakerNum){
     Serial.printf("[moveToBeaker] Moving to %i", beakerNum);
     stepper_R.moveTo(beakerDistance[beakerNum]);
     while (stepper_R.currentPosition() != beakerDistance[beakerNum]) {
-        stepper_R.run();
-        if (RUN) {
-            stepper_Z.runToNewPosition(0);
-            return;
-        }
+      stepper_R.run();
+      if (RUN) {
+        stepper_Z.runToNewPosition(0);
+        return;
+      }
     }
 } // next
 

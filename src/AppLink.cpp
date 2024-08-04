@@ -190,7 +190,6 @@ void startMachine(const JsonDocument& doc, MachineInfo& info) {
       info.setDipRPM[i] = setDipRPM[i];
   }
   currentState = MachineState::HEATING;
-
 } // startMachine
 
 void processClientMessage(char* message){
@@ -203,23 +202,36 @@ void processClientMessage(char* message){
   }
 
   String status = doc["status"];
-
   // Handle wifi functions
   if (status == "scanWiFi") { // scan for wifi
       Serial.println("[processClientMessage] scanning wifi");
       scanNetworks();
+      return;
   }
   if (status == "setWiFi") { // Set wifi
       Serial.println("[processClientMessage] setting wifi");
       String ssid = doc["ssid"];
       String password = doc["password"];
       updateWiFi(ssid.c_str(), password.c_str());
+      return;
   }
   // Handle new start
   if (status == "new"){ // Start new machine
-    Serial.println("[processClientMessage] Starting New machine");
+    Serial.println("[processClientMessage] Setting new machine");
     clearAll();
+    ws.textAll("");
+    return;
+  }  
+  if (status == "start"){ // Start new machine
+    Serial.println("[processClientMessage] Starting machine");
     startMachine(doc, machineInfo);
+    ws.textAll("");
+    return;
+  }
+  // Check again
+  if(status == "checkAgain"){
+    // Check all the sensors again and see if they are all connected
+    return;
   }
  // handle recovery from power loss
   if (status == "recover"){
@@ -229,8 +241,10 @@ void processClientMessage(char* message){
       return;
     }
     Serial.println("[processClientMessage] Recovering from powerloss");
+    ws.textAll("[processClientMessage] Recovering from powerloss");
     machineInfo.powerLoss = false;
     currentState = MachineState::HEATING;
+    return;
   }
 // handle abortion
   if (status == "abort"){ // abort current operation
@@ -238,6 +252,7 @@ void processClientMessage(char* message){
     clearAll();
     currentState = MachineState::ABORT;
     ws.textAll("[processClientMessage] Abortion confirmed!");
+    return;
   } else ws.textAll("Can't Abort if machine ain't started!");
 } // processClientMessage
 
@@ -317,6 +332,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 void broadcast(){
   JsonDocument doc;
   // Serialize the MachineInfo struct to JSON
+  doc["state"] = int(currentState);
   doc["timeLeft"] = machineInfo.timeLeft;
   doc["activeBeakers"] = machineInfo.activeBeakers;
   doc["onBeaker"] = machineInfo.onBeaker;

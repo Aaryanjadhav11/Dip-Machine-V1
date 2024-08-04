@@ -6,19 +6,21 @@ import json
 status = ["new", "abort", "recover"]
 msg = {
     "status" : "",
-    "activeBeakers" : 6,
+    "activeBeakers" : 4,
     "setCycles" : 10,
     "setDipTemperature" : [50, 50, 50, 50, 50, 50],
-    "setDipDuration" : [1,1,1,1,1,1],
-    "setDipRPM" : [300, 300, 300, 300, 300, 300]
+    "setDipDuration" : [5, 5, 5, 5, 5, 5],
+    "setDipRPM" : [500, 500, 500, 500, 500, 500]
 }
+
 async def receive_data():
     try:
         # Resolve the local IP address of the server
         ip_address = socket.gethostbyname('DipMachine.local')
         uri = f"ws://{ip_address}/ws"
         async with websockets.connect(uri) as websocket:
-            print(await websocket.recv())
+            print("Connected")
+            # print(await websocket.recv())
             for i, state in enumerate(status, 1):
                 print(f"{i}. {state}")
             msg["status"] = status[int(input("Enter the number of your choice: "))-1]
