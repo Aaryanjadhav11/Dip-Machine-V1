@@ -18,7 +18,7 @@ void setup() {
 }
 
 void loop() {
-  if (currentState == MachineState::WORKING) {
+  if (MACHINE_WORKING) {
     for (size_t i = machineInfo.onCycle; i < machineInfo.setCycles; i++) {
       if (RUN) break;
       for (size_t j = machineInfo.onBeaker; j < machineInfo.activeBeakers; j++) {
@@ -30,6 +30,7 @@ void loop() {
       machineInfo.onBeaker = 0;
       machineInfo.onCycle++;
       if (machineInfo.onCycle == machineInfo.setCycles) {
+        currentState = MachineState::DONE;
         Move::present();
         break;
       }
@@ -41,7 +42,7 @@ void loop() {
 void IRAM_ATTR onPowerLoss() {
   unsigned long interruptTime = millis();
   // If interrupts come faster than debounceDelay, assume it's a false trigger
-  if (interruptTime - lastInterruptTime > 50 && HEATING_WORKING) {
+  if (interruptTime - lastInterruptTime > 50 && MACHINE_HEATING || MACHINE_WORKING) {
     pref.begin(machineInfoStore); // Open pref in read-write mode
     machineInfo.powerLoss = true;
     pref.putBytes("data", &machineInfo, sizeof(machineInfo));

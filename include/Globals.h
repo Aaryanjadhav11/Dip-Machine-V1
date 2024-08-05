@@ -51,7 +51,13 @@ struct MachineInfo {
     int setDipRPM[MAX_BEAKERS];
 };
 extern MachineInfo machineInfo;
-#define HEATING_WORKING (currentState == MachineState::HEATING || currentState == MachineState::WORKING)
+#define MACHINE_HEATING (currentState == MachineState::HEATING)
+#define MACHINE_WORKING (currentState == MachineState::WORKING)
+#define MACHINE_DONE (currentState == MachineState::DONE)
+#define MACHINE_IDEL (currentState == MachineState::IDLE)
+#define MACHINE_ABORT (currentState == MachineState::ABORT)
+#define MACHINE_HOMING (currentState == MachineState::HOMING)
+
 #define machineInfoStore "mahcineInfo"
 #define WDT_TRIGGER (millis() - wdt_counter > 2000)
 // Mosfet pins array

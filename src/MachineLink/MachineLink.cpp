@@ -26,7 +26,9 @@ void heatingInit(void * params){
   esp_task_wdt_init(50, true);
   esp_task_wdt_add(NULL);
   unsigned long wdt_counter = millis();
+  currentState = MachineState::HOMING;
   Move::home();
+  currentState = MachineState::IDLE;
   while (true){
     if (WDT_TRIGGER){
       Serial.println("[heatingInit] Watchdog triggered");
@@ -42,8 +44,6 @@ void heatingInit(void * params){
 void PID(){
 
 }
-
-
 void printAddress(DeviceAddress deviceAddress) {
   for (uint8_t i = 0; i < 8; i++) {
     if (deviceAddress[i] < 16) Serial.print("0");
@@ -124,9 +124,9 @@ void home(){
   stepper_Z.runToNewPosition(-500);
   stepper_Z.setCurrentPosition(0);
 
-  stepper_Z.setAcceleration(2000);
-  stepper_Z.setMaxSpeed(2000);
-  stepper_Z.setSpeed(2000);
+  stepper_Z.setAcceleration(3000);
+  stepper_Z.setMaxSpeed(3000);
+  stepper_Z.setSpeed(3000);
   Serial.println("[home] Z Axis Homed.");
 
   Serial.println("[home] Homing Rotary Axis...");
@@ -173,9 +173,7 @@ void present(){
     stepper_Z.runToNewPosition(0);
     stepper_R.runToNewPosition(-882);
     ledcWrite(STEERING_CHANNEL, 0);
-    currentState == MachineState::DONE;
     Serial.println("[present] Task Competed!");
-
 } // present
 
 } // namespace Move
