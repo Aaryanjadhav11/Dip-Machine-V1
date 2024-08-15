@@ -3,27 +3,31 @@ import websockets
 import socket
 import json
 
-# Message to initiate WiFi scanning
-
 async def receive_data():
     try:
-        # Resolve the local IP address of the server
-        ip_address = socket.gethostbyname('DipMachine.local')
-        uri = f"ws://{ip_address}/ws"
+        uri = f"ws://DipMachine.local/ws"
 
         async with websockets.connect(uri) as websocket:
             # Send the initial scanWiFi message
-            await websocket.send(json.dumps(dict(status = "scanWiFi")))
+            print(await websocket.recv())
+            await websocket.send(json.dumps(dict(status="scanWiFi")))
 
             # Receive the list of available networks
-            print("\nSearching for newtorks, Hang on...\n")
+            print("\nSearching for networks, Hang on...\n")
             response = await websocket.recv()
             message = json.loads(response)
+
+            # Print the received message for debugging
+            print("Received message:", message)
 
             # Display the available networks
             ssids = []
             for i, ssid in enumerate(message):
                 network_info = message[ssid]
+
+                # Print network_info for debugging
+                print(f"Network info for {ssid}: {network_info}")
+
                 is_open = " " if network_info["isOpen"] else "*"
                 print(f"[{i + 1}] SSID: {ssid} {is_open} {network_info['rssi']}")
                 ssids.append(ssid)
@@ -42,7 +46,7 @@ async def receive_data():
             # Update the message to set WiFi
             selected_ssid = ssids[tag]
             passw = "" if message[selected_ssid]["isOpen"] else input(f"Enter the password for [{selected_ssid}]: ")
-            msg = dict(status = "setWiFi", ssid = selected_ssid, password = passw)
+            msg = dict(status="setWiFi", ssid=selected_ssid, password=passw)
 
             # Send the updated message to set the WiFi
             await websocket.send(json.dumps(msg))

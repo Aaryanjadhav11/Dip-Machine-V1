@@ -38,7 +38,6 @@ constexpr int PWM_RESOLUTION = 8;
 
 // Struct to hold machine information
 struct MachineInfo {
-    volatile bool sensorError;
     volatile bool powerLoss;
     int timeLeft;
     uint8_t activeBeakers;
@@ -64,4 +63,6 @@ extern MachineInfo machineInfo;
 constexpr uint8_t MOSFET_PINS[MAX_BEAKERS] = {4, 5, 18, 22, 19, 21};
 
 void appLinkInit(void * parameters);
+void broadcast(String state, String error  = "");
+void checkSensors();
 void clearAll();

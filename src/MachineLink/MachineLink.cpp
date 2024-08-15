@@ -8,7 +8,16 @@ AccelStepper stepper_R(1, ROTARY_AXIS_STEP_PIN, ROTARY_AXIS_DIR_PIN);
 AccelStepper stepper_Z(1, Z_AXIS_STEP_PIN, Z_AXIS_DIR_PIN);
 
 // Global variables
-const int beakerDistance[6] = {0, -340, -680, -1055, -1390, -1755};
+const int beakerDistance[6] = {0, -330, -680, -1055, -1390, -1755};
+// Hardcoded sensor addresses
+DeviceAddress sensorAddresses[MAX_BEAKERS] = {
+  { 0x28, 0x12, 0xCC, 0x16, 0xA8, 0x01, 0x3C, 0x13 }, // 1
+  { 0x28, 0xDB, 0x09, 0x16, 0xA8, 0x01, 0x3C, 0xEA }, // 2
+  { 0x28, 0xAC, 0x2F, 0x16, 0xA8, 0x01, 0x3C, 0x93 }, // 3
+  { 0x28, 0x51, 0x18, 0x16, 0xA8, 0x01, 0x3C, 0x7E }, // 4
+  { 0x28, 0x0E, 0x12, 0x16, 0xA8, 0x01, 0x3C, 0xC9 }, // 5
+  { 0x28, 0x4B, 0xFF, 0x16, 0xA8, 0x01, 0x3C, 0x61 }  // 6
+};
 
 // Function Prototype
 void PID();
@@ -26,55 +35,74 @@ void heatingInit(void * params){
   esp_task_wdt_init(50, true);
   esp_task_wdt_add(NULL);
   unsigned long wdt_counter = millis();
+
   currentState = MachineState::HOMING;
   Move::home();
   currentState = MachineState::IDLE;
+
   while (true){
     if (WDT_TRIGGER){
-      Serial.println("[heatingInit] Watchdog triggered");
       esp_task_wdt_reset();
       wdt_counter = millis();
     }
     if (currentState == MachineState::HEATING){
       currentState = MachineState::WORKING;
     }
+    if (currentState == MachineState::ABORT){
+      ledcWrite(STEERING_CHANNEL, 0);
+      currentState == MachineState::IDLE;
+    }
+    
   }
 } // heatingInit
 
-void PID(){
 
-}
-void printAddress(DeviceAddress deviceAddress) {
-  for (uint8_t i = 0; i < 8; i++) {
-    if (deviceAddress[i] < 16) Serial.print("0");
-    Serial.print(deviceAddress[i], HEX);
-  }
-  Serial.println();
-}
+// =======================| Temperature Sensors Handling Code |===========================
+// Function to check if a specific sensor address is connected
+bool isSensorConnected(const DeviceAddress& address) {
+  oneWire.reset();
+  oneWire.select(address);
+  oneWire.write(0x44, 1); // Start temperature conversion
+  oneWire.reset(); // Reset bus
+  oneWire.select(address);
+  oneWire.write(0xBE); // Read Scratchpad
 
-void displaySensorAddresses() {
-  int deviceCount = sensors.getDeviceCount();
+  // Read Scratchpad to check if the device responds correctly
+  byte scratchpad[9];
+  oneWire.read_bytes(scratchpad, sizeof(scratchpad));
   
-  Serial.printf("Found %d devices.\n", deviceCount);
+  // Check if the first byte is valid
+  return (scratchpad[0] != 0xFF); // If the first byte is 0xFF, it's likely a disconnected device
+} // isSensorConnected
 
-  for (int i = 0; i < deviceCount && i < 6; i++) {
-    DeviceAddress address;
-    if (sensors.getAddress(address, i)) {
-      Serial.printf("Sensor %d address: ", i + 1);
-      printAddress(address);
+void checkSensors() {
+  MachineState previousState = currentState;
+  bool allConnected = true;
+  String message = "Disconnected sensors: ";
+  
+  for (size_t i = 0; i < MAX_BEAKERS; ++i) {
+    if (isSensorConnected(sensorAddresses[i])) {
+      Serial.printf("Sensor %d Connected\n", i + 1);
     } else {
-      Serial.printf("Error: Could not find address for sensor %d!\n", i + 1);
+      Serial.printf("Sensor %d NOT CONNECTED!\n", i + 1);
+      message += String(i + 1) + " ";
+      allConnected = false;
     }
   }
+  if (!allConnected) {
+    broadcast("HALTED", message);
+    currentState = MachineState::HALTED;
+  }
 }
+
 // =======================| Motion Handling Code |===========================
 namespace Move{
+const int dipDistance = -13500;
 
 void dip(int duration, int rpm){
 // Dips the head in solution and starts sterring
   Serial.println("[dip] Putting in...");
 
-  const int dipDistance = -14500;
   stepper_Z.moveTo(dipDistance);
   Serial.printf("[dip] Duration: %i   RPM: %i\n", duration, rpm);
   while (stepper_Z.currentPosition() != dipDistance) {
@@ -171,7 +199,9 @@ void present(){
     Serial.println("[present] Presenting ..");
     clearAll();
     stepper_Z.runToNewPosition(0);
-    stepper_R.runToNewPosition(-882);
+    stepper_R.runToNewPosition(beakerDistance[5]);
+    stepper_Z.runToNewPosition(dipDistance);
+
     ledcWrite(STEERING_CHANNEL, 0);
     Serial.println("[present] Task Competed!");
 } // present

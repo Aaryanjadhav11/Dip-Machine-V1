@@ -22,7 +22,6 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
 void checkPowerLoss();
 void printMachineInfo(const MachineInfo& info);
 void startMachine(const JsonDocument& doc, MachineInfo& info);
-void broadcast(String state);
 
 // ========================== Main: appLinkInit =========================
 void appLinkInit(void * parameters) {
@@ -54,7 +53,6 @@ void appLinkInit(void * parameters) {
     unsigned long broadcast_counter = millis();
     while (true) {
       if (WDT_TRIGGER){
-        Serial.println("[appLinkInit] Watchdog triggered");
         esp_task_wdt_reset();
         wdt_counter = millis();
       }
@@ -65,7 +63,6 @@ void appLinkInit(void * parameters) {
       }
       if (MACHINE_DONE){
         broadcast("DONE");
-        currentState = MachineState::IDLE;
       }
       
       ArduinoOTA.handle();
@@ -211,6 +208,7 @@ void startMachine(const JsonDocument& doc, MachineInfo& info) {
   for (int i = 0; i < info.activeBeakers; i++) {
       info.setDipRPM[i] = setDipRPM[i];
   }
+  broadcast("HEATING");
   currentState = MachineState::HEATING;
 } // startMachine
 
@@ -219,10 +217,10 @@ void processClientMessage(char* message){
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, message);
   if (error) {
-      Serial.print("[processClientMessage] deserializeJson() failed: ");
-      Serial.println(error.c_str());
-      return;
-  }
+    Serial.print("[processClientMessage] deserializeJson() failed: ");
+    Serial.println(error.c_str());
+    return;
+  } else Serial.println(message);
 
   String status = doc["status"];
   // Handle wifi functions
@@ -243,18 +241,17 @@ void processClientMessage(char* message){
     Serial.println("[processClientMessage] Setting new machine");
     clearAll();
     broadcast("IDEL");
-    currentState == MachineState::IDLE;
+    currentState = MachineState::IDLE;
     return;
-  }  
+  }
   if (status == "start"){ // Start new machine
     Serial.println("[processClientMessage] Starting machine");
     startMachine(doc, machineInfo);
-    broadcast("STARTED");
     return;
   }
   // Check again
   if(status == "checkAgain"){
-    // Check all the sensors again and see if they are all connected
+    checkSensors();
     return;
   }
  // handle recovery from power loss
@@ -276,6 +273,8 @@ void processClientMessage(char* message){
     clearAll();
     currentState = MachineState::ABORT;
     broadcast("ABORTED");
+    currentState = MachineState::IDLE;
+    broadcast("IDEL");
     return;
   } else ws.textAll("Can't Abort if machine ain't started!");
 } // processClientMessage
@@ -287,14 +286,16 @@ void clearAll() {
   Serial.println("[clearAll] machineInfoStore & machineInfo cleared!");
 
   memset(&machineInfo, 0, sizeof(MachineInfo)); //
+  
 } // clearAll
 
 void clientConnected(){
   if (MACHINE_IDEL || MACHINE_HOMING){
-    checkPowerLoss();
+    checkPowerLoss(); // sends POWERLOSS if true
+    checkSensors(); // sends HALTED if true
   }  
   else if (MACHINE_ABORT){
-    broadcast("ABORTED"); 
+    broadcast("IDEL");
   }
   else if (MACHINE_HEATING || MACHINE_WORKING){
     broadcast("WORKING");
@@ -302,6 +303,7 @@ void clientConnected(){
   else if (MACHINE_DONE){
     broadcast("DONE");
     currentState = MachineState::IDLE;
+    vTaskDelay(pdMS_TO_TICKS(5000));
     broadcast("IDEL");
   }
 }
@@ -322,7 +324,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
   }
 } // onWsEvent
 
-void broadcast(String state){
+void broadcast(String state, String error){
   JsonDocument doc;
   // Serialize the MachineInfo struct to JSON
   doc["state"] = state;
@@ -331,7 +333,8 @@ void broadcast(String state){
   doc["onBeaker"] = machineInfo.onBeaker;
   doc["onCycle"] = machineInfo.onCycle;
   doc["setCycles"] = machineInfo.setCycles;
-  
+  if (error.length() > 0) doc["error"] = error;
+
   JsonArray currentTemp = doc["currentTemp"].to<JsonArray>();
   JsonArray setDipDuration = doc["setDipDuration"].to<JsonArray>();
   JsonArray setDipRPM = doc["setDipRPM"].to<JsonArray>();
@@ -346,13 +349,14 @@ void broadcast(String state){
   String output;
   serializeJson(doc, output);
   ws.textAll(output);
-}
-// ==================| Debughing code |================
+} // broadcast
 
+// ==================| Debughing code |================
 void printMachineInfo(const MachineInfo& info) {
   Serial.println("----------------|printMachineInfo|---------------------");
   Serial.printf("Machine Information:\n");
   Serial.printf("Power Loss: %s\n", info.powerLoss ? "Yes" : "No");
+  Serial.printf("Machine state: %d\n", int(currentState));
   Serial.printf("Time Left: %d\n", info.timeLeft);
   Serial.printf("Active Beakers: %d\n", info.activeBeakers);
   Serial.printf("On Beaker: %d\n", info.onBeaker);

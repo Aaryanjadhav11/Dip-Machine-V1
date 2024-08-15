@@ -13,7 +13,7 @@ class WebSocketUI:
         self.websocket = None
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.status = ["start", "abort", "recover"]
+        self.status = ["new","start", "abort", "recover"]
         self.msg = {
             "status": "", "activeBeakers": 1, "setCycles": 1,
             "setDipTemperature": [0, 0, 0, 0, 0, 0],
@@ -137,8 +137,7 @@ class WebSocketUI:
     async def connect_websocket(self):
         while True:
             try:
-                ip_address = socket.gethostbyname('DipMachine.local')
-                uri = f"ws://{ip_address}/ws"
+                uri = f"ws://DipMachine.local/ws"
                 self.websocket = await websockets.connect(uri)
                 self.update_connection_status("Connected")
                 self.enable_choices()
