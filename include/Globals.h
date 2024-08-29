@@ -59,8 +59,6 @@ extern MachineInfo machineInfo;
 
 #define machineInfoStore "mahcineInfo"
 #define WDT_TRIGGER (millis() - wdt_counter > 2000)
-// Mosfet pins array
-constexpr uint8_t MOSFET_PINS[MAX_BEAKERS] = {4, 5, 18, 22, 19, 21};
 
 void appLinkInit(void * parameters);
 void broadcast(String state, String error  = "");

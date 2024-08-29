@@ -208,8 +208,8 @@ void startMachine(const JsonDocument& doc, MachineInfo& info) {
   for (int i = 0; i < info.activeBeakers; i++) {
       info.setDipRPM[i] = setDipRPM[i];
   }
-  broadcast("HEATING");
-  currentState = MachineState::HEATING;
+  broadcast("HOMING");
+  currentState = MachineState::HOMING;
 } // startMachine
 
 // =========================| Websocket Event handling |==============================
@@ -264,7 +264,7 @@ void processClientMessage(char* message){
     Serial.println("[processClientMessage] Recovering from powerloss");
     ws.textAll("[processClientMessage] Recovering from powerloss");
     machineInfo.powerLoss = false;
-    currentState = MachineState::HEATING;
+    currentState = MachineState::HOMING;
     return;
   }
 // handle abortion

@@ -20,14 +20,24 @@ DeviceAddress sensorAddresses[MAX_BEAKERS] = {
 };
 
 // Function Prototype
-void PID();
-
+void heatingLoop();
 // =======================| Heating Handling Code |===========================
 void heatingInit(void * params){
   ledcSetup(STEERING_CHANNEL, 5000, 10);
   ledcAttachPin(STEERING_MOTOR_PIN, STEERING_CHANNEL);
   ledcWrite(STEERING_CHANNEL, 0);
 
+  for (size_t i = 3; i < 9; i++){
+    ledcSetup(i, PWM_FREQ, PWM_RESOLUTION);
+    ledcAttachPin(MOSFET_PINS[i-3], i);
+    ledcWrite(i, 255);
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }  
+  for (size_t i = 3; i < 9; i++){
+    ledcWrite(i, 0);
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+  
   pinMode(Z_AXIS_LIMIT_PIN, INPUT_PULLDOWN);
   pinMode(ROTARY_AXIS_LIMIT_PIN, INPUT_PULLDOWN);
 
@@ -36,8 +46,6 @@ void heatingInit(void * params){
   esp_task_wdt_add(NULL);
   unsigned long wdt_counter = millis();
 
-  currentState = MachineState::HOMING;
-  Move::home();
   currentState = MachineState::IDLE;
 
   while (true){
@@ -45,17 +53,37 @@ void heatingInit(void * params){
       esp_task_wdt_reset();
       wdt_counter = millis();
     }
-    if (currentState == MachineState::HEATING){
+    else if (MACHINE_HOMING){
+      Move::home();
+      currentState = MachineState::HEATING;
+      heatingLoop();
       currentState = MachineState::WORKING;
     }
-    if (currentState == MachineState::ABORT){
+    else if (currentState == MachineState::ABORT){
       ledcWrite(STEERING_CHANNEL, 0);
       currentState == MachineState::IDLE;
     }
-    
+    else if (MACHINE_WORKING){
+      checkSensors();
+      heatingLoop();
+    }
+    for (size_t i = 0; i < 6; i++){
+      digitalWrite(MOSFET_PINS[i], HIGH);
+      delay(5000);
+      digitalWrite(MOSFET_PINS[i], LOW);
+    }
   }
 } // heatingInit
 
+// =======================| Heater Handling Code |===========================
+// Handle PID calculation for the provided beaker number
+void PID(uint8_t beakerNum){
+
+}
+
+// Runs in loop to maintain temps. Use once to detect heatup.
+void heatingLoop(){
+}
 
 // =======================| Temperature Sensors Handling Code |===========================
 // Function to check if a specific sensor address is connected
@@ -76,10 +104,8 @@ bool isSensorConnected(const DeviceAddress& address) {
 } // isSensorConnected
 
 void checkSensors() {
-  MachineState previousState = currentState;
   bool allConnected = true;
   String message = "Disconnected sensors: ";
-  
   for (size_t i = 0; i < MAX_BEAKERS; ++i) {
     if (isSensorConnected(sensorAddresses[i])) {
       Serial.printf("Sensor %d Connected\n", i + 1);

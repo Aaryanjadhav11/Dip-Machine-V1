@@ -19,6 +19,9 @@
 #define STEERING_CHANNEL 4
 #define STEERING_MOTOR_PIN 25
 
+// Mosfet pins array
+constexpr uint8_t MOSFET_PINS[MAX_BEAKERS] = {4, 5, 18, 21, 19, 22};
+
 // Sensor pin
 constexpr int TEMP_SENSOR_PIN = 15;
 
