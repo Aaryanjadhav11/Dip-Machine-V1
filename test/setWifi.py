@@ -17,9 +17,6 @@ async def receive_data():
             response = await websocket.recv()
             message = json.loads(response)
 
-            # Print the received message for debugging
-            print("Received message:", message)
-
             # Display the available networks
             ssids = []
             for i, ssid in enumerate(message):

@@ -63,8 +63,8 @@ void appLinkInit(void * parameters) {
       }
       if (MACHINE_DONE){
         broadcast("DONE");
+        
       }
-      
       ArduinoOTA.handle();
       vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -185,7 +185,7 @@ void checkPowerLoss(){
   if (machineInfo.powerLoss){
     Serial.println("[checkPowerLoss] PowerLoss Detected");
     broadcast("POWERLOSS");
-  } else broadcast("IDEL");
+  } else broadcast("IDLE");
 } // checkPowerLoss
 
 // =========================| State Changing Functions |========================
@@ -208,7 +208,6 @@ void startMachine(const JsonDocument& doc, MachineInfo& info) {
   for (int i = 0; i < info.activeBeakers; i++) {
       info.setDipRPM[i] = setDipRPM[i];
   }
-  broadcast("HOMING");
   currentState = MachineState::HOMING;
 } // startMachine
 
@@ -240,7 +239,7 @@ void processClientMessage(char* message){
   if (status == "new"){ // Start new machine
     Serial.println("[processClientMessage] Setting new machine");
     clearAll();
-    broadcast("IDEL");
+    broadcast("IDLE");
     currentState = MachineState::IDLE;
     return;
   }
@@ -274,7 +273,7 @@ void processClientMessage(char* message){
     currentState = MachineState::ABORT;
     broadcast("ABORTED");
     currentState = MachineState::IDLE;
-    broadcast("IDEL");
+    broadcast("IDLE");
     return;
   } else ws.textAll("Can't Abort if machine ain't started!");
 } // processClientMessage
@@ -290,12 +289,12 @@ void clearAll() {
 } // clearAll
 
 void clientConnected(){
-  if (MACHINE_IDEL || MACHINE_HOMING){
+  if (MACHINE_IDLE || MACHINE_HOMING){
     checkPowerLoss(); // sends POWERLOSS if true
     checkSensors(); // sends HALTED if true
   }  
   else if (MACHINE_ABORT){
-    broadcast("IDEL");
+    broadcast("IDLE");
   }
   else if (MACHINE_HEATING || MACHINE_WORKING){
     broadcast("WORKING");
@@ -304,7 +303,7 @@ void clientConnected(){
     broadcast("DONE");
     currentState = MachineState::IDLE;
     vTaskDelay(pdMS_TO_TICKS(5000));
-    broadcast("IDEL");
+    broadcast("IDLE");
   }
 }
 

@@ -25,14 +25,6 @@ extern MachineState currentState;
 // Constants
 constexpr int MAX_BEAKERS = 6;
 constexpr int POWER_LOSS_PIN = 34;
-constexpr int RED_PIN = 2;
-constexpr int GREEN_PIN = 14;
-constexpr int BLUE_PIN = 27;
-
-// TODO: Shitft this values in indicator file
-constexpr int RED_CHANNEL = 0;
-constexpr int GREEN_CHANNEL = 1;
-constexpr int BLUE_CHANNEL = 2;
 constexpr int PWM_FREQ = 5000;
 constexpr int PWM_RESOLUTION = 8;
 
@@ -40,7 +32,7 @@ constexpr int PWM_RESOLUTION = 8;
 struct MachineInfo {
     volatile bool powerLoss;
     int timeLeft;
-    uint8_t activeBeakers;
+    uint8_t activeBeakers = 1;
     uint8_t onBeaker;
     int onCycle;
     int setCycles;
@@ -53,7 +45,7 @@ extern MachineInfo machineInfo;
 #define MACHINE_HEATING (currentState == MachineState::HEATING)
 #define MACHINE_WORKING (currentState == MachineState::WORKING)
 #define MACHINE_DONE (currentState == MachineState::DONE)
-#define MACHINE_IDEL (currentState == MachineState::IDLE)
+#define MACHINE_IDLE (currentState == MachineState::IDLE)
 #define MACHINE_ABORT (currentState == MachineState::ABORT)
 #define MACHINE_HOMING (currentState == MachineState::HOMING)
 

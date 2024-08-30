@@ -8,7 +8,7 @@ AccelStepper stepper_R(1, ROTARY_AXIS_STEP_PIN, ROTARY_AXIS_DIR_PIN);
 AccelStepper stepper_Z(1, Z_AXIS_STEP_PIN, Z_AXIS_DIR_PIN);
 
 // Global variables
-const int beakerDistance[6] = {0, -330, -680, -1055, -1390, -1755};
+const int beakerDistance[6] = {0, -350, -695, -1055, -1420, -1755};
 // Hardcoded sensor addresses
 DeviceAddress sensorAddresses[MAX_BEAKERS] = {
   { 0x28, 0x12, 0xCC, 0x16, 0xA8, 0x01, 0x3C, 0x13 }, // 1
@@ -47,13 +47,13 @@ void heatingInit(void * params){
   unsigned long wdt_counter = millis();
 
   currentState = MachineState::IDLE;
-
   while (true){
     if (WDT_TRIGGER){
       esp_task_wdt_reset();
       wdt_counter = millis();
     }
     else if (MACHINE_HOMING){
+      broadcast("WORKING");
       Move::home();
       currentState = MachineState::HEATING;
       heatingLoop();
@@ -66,11 +66,6 @@ void heatingInit(void * params){
     else if (MACHINE_WORKING){
       checkSensors();
       heatingLoop();
-    }
-    for (size_t i = 0; i < 6; i++){
-      digitalWrite(MOSFET_PINS[i], HIGH);
-      delay(5000);
-      digitalWrite(MOSFET_PINS[i], LOW);
     }
   }
 } // heatingInit
@@ -198,7 +193,7 @@ void home(){
 
   while (!digitalRead(ROTARY_AXIS_LIMIT_PIN)) stepper_R.runSpeed();
   stepper_R.setCurrentPosition(0);
-  stepper_R.runToNewPosition(-100);
+  stepper_R.runToNewPosition(-80);
   stepper_R.setCurrentPosition(0);
 
   stepper_R.setAcceleration(1000);
