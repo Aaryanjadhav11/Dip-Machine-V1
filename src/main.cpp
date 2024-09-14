@@ -30,8 +30,7 @@ void loop() {
       machineInfo.onBeaker = 0;
       machineInfo.onCycle++;
       if (machineInfo.onCycle == machineInfo.setCycles) {
-        currentState = MachineState::DONE;
-        Move::present();
+        Move::done();
         break;
       }
     }

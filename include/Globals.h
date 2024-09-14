@@ -31,15 +31,17 @@ constexpr int PWM_RESOLUTION = 8;
 // Struct to hold machine information
 struct MachineInfo {
     volatile bool powerLoss;
-    int timeLeft;
     uint8_t activeBeakers = 1;
-    uint8_t onBeaker;
-    int onCycle;
     int setCycles;
-    float currentTemps[MAX_BEAKERS];
+    uint8_t storeIn;
     float setDipTemperature[MAX_BEAKERS];
     int setDipDuration[MAX_BEAKERS];
     int setDipRPM[MAX_BEAKERS];
+
+    int timeLeft;
+    uint8_t onBeaker;
+    int onCycle;
+    float currentTemps[MAX_BEAKERS];
 };
 extern MachineInfo machineInfo;
 #define MACHINE_HEATING (currentState == MachineState::HEATING)

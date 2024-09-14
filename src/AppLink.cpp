@@ -193,7 +193,7 @@ void startMachine(const JsonDocument& doc, MachineInfo& info) {
   Serial.println("[startMachine] Started Heating");
   info.activeBeakers = doc["activeBeakers"];
   info.setCycles = doc["setCycles"];
-
+  info.storeIn = doc["storeIn"];
   JsonArrayConst setDipTemperature = doc["setDipTemperature"];
   for (int i = 0; i < info.activeBeakers; i++) {
       info.setDipTemperature[i] = setDipTemperature[i];
@@ -249,19 +249,17 @@ void processClientMessage(char* message){
     return;
   }
   // Check again
-  if(status == "checkAgain"){
+  if(status == "recheck"){
     checkSensors();
     return;
   }
  // handle recovery from power loss
   if (status == "recover"){
     if (!machineInfo.powerLoss){
-      ws.textAll("No power loss Detected, Recovery attempt failed!");
       Serial.println("[processClientMessage] Recovery attempt failed!");
       return;
     }
     Serial.println("[processClientMessage] Recovering from powerloss");
-    ws.textAll("[processClientMessage] Recovering from powerloss");
     machineInfo.powerLoss = false;
     currentState = MachineState::HOMING;
     return;
@@ -275,7 +273,7 @@ void processClientMessage(char* message){
     currentState = MachineState::IDLE;
     broadcast("IDLE");
     return;
-  } else ws.textAll("Can't Abort if machine ain't started!");
+  }
 } // processClientMessage
 
 void clearAll() {
@@ -332,6 +330,7 @@ void broadcast(String state, String error){
   doc["onBeaker"] = machineInfo.onBeaker;
   doc["onCycle"] = machineInfo.onCycle;
   doc["setCycles"] = machineInfo.setCycles;
+  doc["storeIn"] = machineInfo.storeIn;
   if (error.length() > 0) doc["error"] = error;
 
   JsonArray currentTemp = doc["currentTemp"].to<JsonArray>();

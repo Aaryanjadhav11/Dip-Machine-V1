@@ -35,5 +35,5 @@ namespace Move{
     void dip(int duration, int rpm);
     void moveToBeaker(uint8_t beakerNum);
     void home();
-    void present();
+    void done();
 } // namespace Move

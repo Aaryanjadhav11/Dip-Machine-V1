@@ -215,16 +215,21 @@ void moveToBeaker(uint8_t beakerNum){
     }
 } // next
 
-void present(){
+void done(){
 // presents the result after completing
-    Serial.println("[present] Presenting ..");
+    Serial.println("[Done] Presenting ..");
     clearAll();
     stepper_Z.runToNewPosition(0);
-    stepper_R.runToNewPosition(beakerDistance[5]);
-    stepper_Z.runToNewPosition(dipDistance);
-
-    ledcWrite(STEERING_CHANNEL, 0);
-    Serial.println("[present] Task Competed!");
-} // present
+    if (machineInfo.storeIn == 0){ // In air selected
+      stepper_R.runToNewPosition(-877);
+      Serial.printf("[Done] Storing the strip In Air;");
+    } else {
+      Serial.printf("Storing the strip in beaker: %d", machineInfo.storeIn - 1);
+      stepper_R.runToNewPosition(beakerDistance[machineInfo.storeIn - 1]);
+      stepper_Z.runToNewPosition(dipDistance);
+      ledcWrite(STEERING_CHANNEL, 0);\
+      currentState = MachineState::DONE;
+    }
+} // Done
 
 } // namespace Move
