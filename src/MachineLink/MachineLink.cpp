@@ -238,6 +238,7 @@ void done(){
     currentState = MachineState::DONE;
     broadcast("DONE");
     vTaskDelay(pdMS_TO_TICKS(5000));
+    currentState = MachineState::IDLE;
     broadcast("IDLE");
 } // Done
 
