@@ -276,6 +276,7 @@ void clearAll() {
   Serial.println("[clearAll] machineInfoStore & machineInfo cleared!");
 
   memset(&machineInfo, 0, sizeof(MachineInfo)); //
+  machineInfo.activeBeakers = 1;
 } // clearAll
 
 void clientConnected(){
