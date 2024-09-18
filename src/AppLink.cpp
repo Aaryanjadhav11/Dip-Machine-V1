@@ -61,10 +61,6 @@ void appLinkInit(void * parameters) {
         broadcast("WORKING");
         broadcast_counter = millis();
       }
-      if (MACHINE_DONE){
-        broadcast("DONE");
-        
-      }
       ArduinoOTA.handle();
       vTaskDelay(pdMS_TO_TICKS(10));
     }
