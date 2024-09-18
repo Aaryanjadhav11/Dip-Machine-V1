@@ -136,7 +136,7 @@ void dip(int duration, int rpm){
   while (stepper_Z.currentPosition() != dipDistance) {
     stepper_Z.run();
     if (RUN) {
-      stepper_Z.runToNewPosition(0);
+      abort();
       return;
     }
   }
@@ -147,7 +147,7 @@ void dip(int duration, int rpm){
   unsigned long start = millis();
   while (millis() - start < duration * 1000) {
     if (RUN) {
-      stepper_Z.runToNewPosition(0);
+      abort();
       return;
     }
   }
@@ -216,7 +216,7 @@ void moveToBeaker(uint8_t beakerNum){
     while (stepper_R.currentPosition() != beakerDistance[beakerNum]) {
       stepper_R.run();
       if (RUN) {
-        stepper_Z.runToNewPosition(0);
+        abort();
         return;
       }
     }
@@ -233,12 +233,15 @@ void done(){
       Serial.printf("Storing the strip in beaker: %d", machineInfo.storeIn - 1);
       stepper_R.runToNewPosition(beakerDistance[machineInfo.storeIn - 1]);
       stepper_Z.runToNewPosition(dipDistance);
-      ledcWrite(STEERING_CHANNEL, 0);
     }
+    ledcWrite(STEERING_CHANNEL, 0);
     currentState = MachineState::DONE;
     broadcast("DONE");
     vTaskDelay(pdMS_TO_TICKS(5000));
     broadcast("IDLE");
 } // Done
 
+void abort(){
+  stepper_Z.runToNewPosition(0);
+}
 } // namespace Move

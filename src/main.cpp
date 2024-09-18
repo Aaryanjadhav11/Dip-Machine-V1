@@ -20,9 +20,15 @@ void setup() {
 void loop() {
   if (MACHINE_WORKING) {
     for (size_t i = machineInfo.onCycle; i < machineInfo.setCycles; i++) {
-      if (RUN) break;
+      if (RUN){
+        Move::abort();
+        break;
+      }
       for (size_t j = machineInfo.onBeaker; j < machineInfo.activeBeakers; j++) {
-        if (RUN) break;
+        if (RUN) {
+          Move::abort();
+          break;
+        }
         Move::moveToBeaker(j);
         Move::dip(machineInfo.setDipDuration[j], machineInfo.setDipRPM[j]);
         machineInfo.onBeaker++;

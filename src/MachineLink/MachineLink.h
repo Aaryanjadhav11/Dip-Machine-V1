@@ -36,4 +36,5 @@ namespace Move{
     void moveToBeaker(uint8_t beakerNum);
     void home();
     void done();
+    void abort();
 } // namespace Move

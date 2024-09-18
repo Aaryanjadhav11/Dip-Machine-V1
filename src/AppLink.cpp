@@ -263,7 +263,6 @@ void processClientMessage(char* message){
 // handle abortion
   if (status == "abort"){ // abort current operation
     Serial.println("[processClientMessage] Aborting");
-    clearAll();
     currentState = MachineState::ABORT;
     broadcast("IDLE");
     return;
