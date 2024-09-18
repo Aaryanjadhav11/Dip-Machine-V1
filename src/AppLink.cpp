@@ -269,8 +269,6 @@ void processClientMessage(char* message){
     Serial.println("[processClientMessage] Aborting");
     clearAll();
     currentState = MachineState::ABORT;
-    broadcast("ABORTED");
-    currentState = MachineState::IDLE;
     broadcast("IDLE");
     return;
   }
@@ -283,7 +281,6 @@ void clearAll() {
   Serial.println("[clearAll] machineInfoStore & machineInfo cleared!");
 
   memset(&machineInfo, 0, sizeof(MachineInfo)); //
-  
 } // clearAll
 
 void clientConnected(){
@@ -291,9 +288,6 @@ void clientConnected(){
     checkPowerLoss(); // sends POWERLOSS if true
     checkSensors(); // sends HALTED if true
   }  
-  else if (MACHINE_ABORT){
-    broadcast("IDLE");
-  }
   else if (MACHINE_HEATING || MACHINE_WORKING){
     broadcast("WORKING");
   }

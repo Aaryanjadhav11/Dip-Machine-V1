@@ -20,6 +20,7 @@ DeviceAddress sensorAddresses[MAX_BEAKERS] = {
 };
 
 // Function Prototype
+void getTemp();
 void heatingLoop();
 // =======================| Heating Handling Code |===========================
 void heatingInit(void * params){
@@ -65,6 +66,7 @@ void heatingInit(void * params){
     }
     else if (MACHINE_WORKING){
       checkSensors();
+      getTemp();
       heatingLoop();
     }
   }
@@ -116,6 +118,11 @@ void checkSensors() {
   }
 }
 
+void getTemp(){
+  for (size_t i = 0; i < machineInfo.activeBeakers; i++){
+    machineInfo.currentTemps[i] = sensors.getTempCByIndex(i);
+  }
+}
 // =======================| Motion Handling Code |===========================
 namespace Move{
 const int dipDistance = -13500;
