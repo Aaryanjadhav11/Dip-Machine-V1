@@ -33,7 +33,7 @@ struct MachineInfo {
     volatile bool powerLoss;
     uint8_t activeBeakers = 1;
     int setCycles;
-    uint8_t storeIn;
+    uint8_t storeIn = 0;
     float setDipTemperature[MAX_BEAKERS];
     int setDipDuration[MAX_BEAKERS];
     int setDipRPM[MAX_BEAKERS];

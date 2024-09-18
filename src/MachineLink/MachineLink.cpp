@@ -45,21 +45,21 @@ void heatingInit(void * params){
   esp_task_wdt_init(50, true);
   esp_task_wdt_add(NULL);
   unsigned long wdt_counter = millis();
-
+  currentState = MachineState::HOMING;
+  Move::home();
   currentState = MachineState::IDLE;
+
   while (true){
     if (WDT_TRIGGER){
       esp_task_wdt_reset();
       wdt_counter = millis();
     }
-    else if (MACHINE_HOMING){
-      broadcast("WORKING");
-      Move::home();
-      currentState = MachineState::HEATING;
+    else if (MACHINE_HEATING){
       heatingLoop();
+      broadcast("WORKING");
       currentState = MachineState::WORKING;
     }
-    else if (currentState == MachineState::ABORT){
+    else if (MACHINE_ABORT){
       ledcWrite(STEERING_CHANNEL, 0);
       currentState == MachineState::IDLE;
     }
@@ -218,7 +218,6 @@ void moveToBeaker(uint8_t beakerNum){
 void done(){
 // presents the result after completing
     Serial.println("[Done] Presenting ..");
-    clearAll();
     stepper_Z.runToNewPosition(0);
     if (machineInfo.storeIn == 0){ // In air selected
       stepper_R.runToNewPosition(-877);
@@ -227,9 +226,12 @@ void done(){
       Serial.printf("Storing the strip in beaker: %d", machineInfo.storeIn - 1);
       stepper_R.runToNewPosition(beakerDistance[machineInfo.storeIn - 1]);
       stepper_Z.runToNewPosition(dipDistance);
-      ledcWrite(STEERING_CHANNEL, 0);\
-      currentState = MachineState::DONE;
+      ledcWrite(STEERING_CHANNEL, 0);
     }
+    currentState = MachineState::DONE;
+    broadcast("DONE");
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    broadcast("IDLE");
 } // Done
 
 } // namespace Move

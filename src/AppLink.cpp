@@ -208,7 +208,7 @@ void startMachine(const JsonDocument& doc, MachineInfo& info) {
   for (int i = 0; i < info.activeBeakers; i++) {
       info.setDipRPM[i] = setDipRPM[i];
   }
-  currentState = MachineState::HOMING;
+  currentState = MachineState::HEATING;
 } // startMachine
 
 // =========================| Websocket Event handling |==============================
@@ -221,7 +221,7 @@ void processClientMessage(char* message){
     return;
   } else Serial.println(message);
 
-  String status = doc["status"];
+  String status = doc["state"];
   // Handle wifi functions
   if (status == "scanWiFi") { // scan for wifi
       Serial.println("[processClientMessage] scanning wifi");
