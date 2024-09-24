@@ -1,14 +1,14 @@
 #include "Globals.h"
 
 Preferences preferences;
-AsyncWebServer server(80);
+AsyncWebServer server(8000);
 AsyncWebSocket ws("/ws");
 
 // Variales only for internal
 struct Network {
-    String ssid;
-    int rssi;
-    bool isOpen;
+  String ssid;
+  int rssi;
+  bool isOpen;
 };
 MachineState currentState = MachineState::IDLE;
 MachineInfo machineInfo;
@@ -35,7 +35,12 @@ void appLinkInit(void * parameters) {
 
     // Start OTA
     ArduinoOTA.begin();
-    MDNS.begin("DipMachine");
+    if (!MDNS.begin("dipmachine")) {
+      Serial.println("Error setting up MDNS responder!");
+    } else {
+      Serial.println("mDNS responder started. Address: dipmachine.local");
+      MDNS.addService("http", "tcp", 8000);
+    }
 
     // Recover data stored in memory (if any)
     preferences.begin(machineInfoStore, true);
